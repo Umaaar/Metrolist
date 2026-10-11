@@ -1257,6 +1257,18 @@ interface DatabaseDao {
     @Query("SELECT * FROM song WHERE isDownloaded = 1 AND (isEpisode = 0 OR isEpisode IS NULL) ORDER BY totalPlayTime")
     fun downloadedSongsByPlayTimeAsc(): Flow<List<Song>>
 
+    @Query("SELECT id FROM song WHERE isDownloaded = 1")
+    fun downloadedSongIds(): List<String>
+
+    @Query(
+        "SELECT * FROM playlist WHERE bookmarkedAt IS NOT NULL AND id IN " +
+            "(SELECT playlistId FROM playlist_song_map WHERE songId IN (SELECT id FROM song WHERE isDownloaded = 1))",
+    )
+    fun playlistsWithDownloadedSongs(): Flow<List<PlaylistEntity>>
+
+    @Query("SELECT * FROM playlist_song_map WHERE songId IN (SELECT id FROM song WHERE isDownloaded = 1)")
+    fun downloadedPlaylistSongMaps(): Flow<List<PlaylistSongMap>>
+
     @Query("UPDATE song SET isDownloaded = :downloaded, dateDownload = :date WHERE id = :songId")
     fun updateDownloadedInfo(songId: String, downloaded: Boolean, date: LocalDateTime?)
 

@@ -244,6 +244,7 @@ const val SYNC_COOLDOWN = 30 * 60L
 val ArtistViewTypeKey = stringPreferencesKey("artistViewType")
 val AlbumViewTypeKey = stringPreferencesKey("albumViewType")
 val PlaylistViewTypeKey = stringPreferencesKey("playlistViewType")
+val DownloadedGroupedKey = booleanPreferencesKey("downloadedGrouped")
 
 val PlaylistEditLockKey = booleanPreferencesKey("playlistEditLock")
 val QuickPicksKey = stringPreferencesKey("discover")

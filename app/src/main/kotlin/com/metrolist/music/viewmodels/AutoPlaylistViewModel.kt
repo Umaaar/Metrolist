@@ -25,9 +25,13 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -76,6 +80,18 @@ constructor(
                 }
             }
             .stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Lazily, emptyList())
+
+    val downloadGroups =
+        if (playlist == "downloaded") {
+            combine(
+                likedSongs,
+                database.playlistsWithDownloadedSongs(),
+                database.downloadedPlaylistSongMaps(),
+                ::groupDownloadedSongs,
+            ).flowOn(Dispatchers.Default)
+        } else {
+            flowOf(emptyList())
+        }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     fun syncLikedSongs() {
         viewModelScope.launch(Dispatchers.IO) { syncUtils.syncLikedSongs() }

@@ -95,6 +95,7 @@ import com.metrolist.music.LocalDownloadUtil
 import com.metrolist.music.LocalPlayerAwareWindowInsets
 import com.metrolist.music.LocalPlayerConnection
 import com.metrolist.music.R
+import com.metrolist.music.constants.DownloadedGroupedKey
 import com.metrolist.music.constants.HideExplicitKey
 import com.metrolist.music.constants.SongSortDescendingKey
 import com.metrolist.music.constants.SongSortType
@@ -144,14 +145,25 @@ fun AutoPlaylistScreen(
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsStateWithLifecycle()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsStateWithLifecycle()
+    val isDownloadedPlaylist = viewModel.playlist == "downloaded"
+    val (groupedView, onGroupedViewChange) = rememberPreference(DownloadedGroupedKey, true)
+    val downloadGroups by viewModel.downloadGroups.collectAsStateWithLifecycle()
+    var selectedGroupKey by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedGroup =
+        remember(downloadGroups, selectedGroupKey, groupedView) {
+            if (groupedView) downloadGroups?.find { it.key == selectedGroupKey } else null
+        }
+    val showGroups = isDownloadedPlaylist && groupedView && selectedGroup == null
+
     val playlist =
-        when (viewModel.playlist) {
+        selectedGroup?.displayTitle() ?: when (viewModel.playlist) {
             "liked" -> stringResource(R.string.liked)
             "uploaded" -> stringResource(R.string.uploaded_playlist)
             else -> stringResource(R.string.offline)
         }
 
-    val songs by viewModel.likedSongs.collectAsStateWithLifecycle(null)
+    val allSongs by viewModel.likedSongs.collectAsStateWithLifecycle(null)
+    val songs = selectedGroup?.songs ?: allSongs
     val mutableSongs =
         remember {
             mutableStateListOf<Song>()
@@ -208,6 +220,8 @@ fun AutoPlaylistScreen(
         }
     } else if (inSelectMode) {
         BackHandler(onBack = onExitSelectionMode)
+    } else if (selectedGroup != null) {
+        BackHandler { selectedGroupKey = null }
     }
 
     val (sortType, onSortTypeChange) =
@@ -457,6 +471,11 @@ fun AutoPlaylistScreen(
         }
     }
 
+    val filteredGroups =
+        remember(downloadGroups, query) {
+            downloadGroups?.filter { query.text.isEmpty() || it.title?.contains(query.text, true) == true }
+        }
+
     val filteredSongs =
         remember(songs, query) {
             if (query.text.isEmpty()) {
@@ -503,12 +522,20 @@ fun AutoPlaylistScreen(
                     },
                 ),
     ) {
-        LazyColumn(
+        if (showGroups) DownloadGroupsGrid(
+            groups = filteredGroups,
+            onGroupClick = { group ->
+                isSearching = false
+                query = TextFieldValue()
+                focusManager.clearFocus()
+                selectedGroupKey = group.key
+            },
+        ) else LazyColumn(
             state = state,
             contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
         ) {
             if (songs != null) {
-                if (songs!!.isEmpty()) {
+                if (songs.isEmpty()) {
                     item(key = "empty_placeholder") {
                         EmptyPlaceholder(
                             icon = R.drawable.music_note,
@@ -520,7 +547,7 @@ fun AutoPlaylistScreen(
                         item(key = "playlist_header") {
                             AutoPlaylistHeader(
                                 name = playlist,
-                                songs = songs!!,
+                                songs = songs,
                                 likeLength = likeLength,
                                 downloadState = downloadState,
                                 onShowRemoveDownloadDialog = { showRemoveDownloadDialog = true },
@@ -609,8 +636,8 @@ fun AutoPlaylistScreen(
                                                 playerConnection.playQueue(
                                                     ListQueue(
                                                         title = playlist,
-                                                        items = songs!!.map { it.toMediaItem() },
-                                                        startIndex = songs!!.indexOfFirst { it.id == song.id },
+                                                        items = songs.map { it.toMediaItem() },
+                                                        startIndex = songs.indexOfFirst { it.id == song.id },
                                                     ),
                                                 )
                                             }
@@ -648,7 +675,7 @@ fun AutoPlaylistScreen(
             }
         }
 
-        DraggableScrollbar(
+        if (!showGroups) DraggableScrollbar(
             modifier =
                 Modifier
                     .padding(
@@ -767,6 +794,10 @@ fun AutoPlaylistScreen(
                                 onExitSelectionMode()
                             }
 
+                            selectedGroup != null -> {
+                                selectedGroupKey = null
+                            }
+
                             else -> {
                                 navController.navigateUp()
                             }
@@ -819,6 +850,19 @@ fun AutoPlaylistScreen(
                         )
                     }
                 } else if (!isSearching) {
+                    if (isDownloadedPlaylist && selectedGroup == null) {
+                        IconButton(
+                            onClick = { onGroupedViewChange(!groupedView) },
+                        ) {
+                            Icon(
+                                painter = painterResource(if (groupedView) R.drawable.list else R.drawable.grid_view),
+                                contentDescription =
+                                    stringResource(
+                                        if (groupedView) R.string.downloads_show_all_songs else R.string.downloads_show_grouped,
+                                    ),
+                            )
+                        }
+                    }
                     IconButton(
                         onClick = { isSearching = true },
                     ) {

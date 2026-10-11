@@ -76,6 +76,7 @@ import com.metrolist.music.db.entities.Album
 import com.metrolist.music.db.entities.Song
 import com.metrolist.music.db.entities.SpeedDialItem
 import com.metrolist.music.extensions.toMediaItem
+import com.metrolist.music.playback.DownloadBundle
 import com.metrolist.music.playback.ExoDownloadService
 import com.metrolist.music.playback.queues.ListQueue
 import com.metrolist.music.ui.component.AlbumListItem
@@ -533,6 +534,13 @@ fun AlbumMenu(
                                         )
                                     },
                                     onClick = {
+                                        downloadUtil.recordBundle(
+                                            id = album.id,
+                                            kind = DownloadBundle.Kind.ALBUM,
+                                            title = album.album.title,
+                                            thumbnailUrl = album.album.thumbnailUrl,
+                                            songIds = songs.map { it.id },
+                                        )
                                         songs.forEach { downloadUtil.download(it) }
                                     },
                                 )

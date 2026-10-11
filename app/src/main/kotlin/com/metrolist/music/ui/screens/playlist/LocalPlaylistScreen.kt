@@ -120,6 +120,7 @@ import com.metrolist.music.db.entities.PlaylistSong
 import com.metrolist.music.db.entities.PlaylistSongMap
 import com.metrolist.music.extensions.move
 import com.metrolist.music.extensions.toMediaItem
+import com.metrolist.music.playback.DownloadBundle
 import com.metrolist.music.playback.ExoDownloadService
 import com.metrolist.music.playback.queues.ListQueue
 import com.metrolist.music.ui.component.ActionPromptDialog
@@ -1413,6 +1414,13 @@ fun LocalPlaylistHeader(
                                     }
 
                                     else -> {
+                                        downloadUtil.recordBundle(
+                                            id = playlist.id,
+                                            kind = DownloadBundle.Kind.LOCAL_PLAYLIST,
+                                            title = playlist.playlist.name,
+                                            thumbnailUrl = playlist.thumbnails.firstOrNull(),
+                                            songIds = songs.map { it.song.id },
+                                        )
                                         songs.forEach { song ->
                                             downloadUtil.download(song.song)
                                         }

@@ -104,6 +104,7 @@ import com.metrolist.music.constants.YtmSyncKey
 import com.metrolist.music.db.entities.Song
 import com.metrolist.music.extensions.fileNameAndSize
 import com.metrolist.music.extensions.toMediaItem
+import com.metrolist.music.playback.DownloadBundle
 import com.metrolist.music.playback.ExoDownloadService
 import com.metrolist.music.playback.queues.ListQueue
 import com.metrolist.music.ui.component.DefaultDialog
@@ -546,6 +547,7 @@ fun AutoPlaylistScreen(
                     if (!isSearching) {
                         item(key = "playlist_header") {
                             AutoPlaylistHeader(
+                                playlistId = if (selectedGroup == null) playlistId else null,
                                 name = playlist,
                                 songs = songs,
                                 likeLength = likeLength,
@@ -879,6 +881,7 @@ fun AutoPlaylistScreen(
 
 @Composable
 private fun AutoPlaylistHeader(
+    playlistId: String?,
     name: String,
     songs: List<Song>,
     likeLength: Int,
@@ -1042,6 +1045,15 @@ private fun AutoPlaylistHeader(
                                     }
 
                                     else -> {
+                                        if (playlistId != null && playlistId != "downloaded") {
+                                            downloadUtil.recordBundle(
+                                                id = "auto:$playlistId",
+                                                kind = DownloadBundle.Kind.AUTO_PLAYLIST,
+                                                title = name,
+                                                thumbnailUrl = songs.firstOrNull()?.thumbnailUrl,
+                                                songIds = songs.map { it.id },
+                                            )
+                                        }
                                         songs.forEach { downloadUtil.download(it) }
                                     }
                                 }

@@ -56,6 +56,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import okhttp3.OkHttpClient
 import timber.log.Timber
+import java.io.File
 import java.io.IOException
 import java.time.LocalDateTime
 import java.util.concurrent.Executor
@@ -92,6 +93,7 @@ constructor(
     private val downloadPreparations = Semaphore(3)
 
     val downloads = MutableStateFlow<Map<String, Download>>(emptyMap())
+    val bundleStore = DownloadBundleStore(File(context.filesDir, DownloadBundleStore.FILE_NAME))
 
     private val dataSourceFactory =
         ResolvingDataSource.Factory(
@@ -390,17 +392,27 @@ constructor(
     }
 
     /**
-     * Re-queues songs the database marks as downloaded but the download index does not know,
+     * Clears the downloaded flag of songs the download index has no completed download for,
      * e.g. after restoring a backup, which carries the database but not the audio.
      */
-    fun requeueMissingDownloads() {
+    fun unflagMissingDownloads() {
         scope.launch {
-            val indexed = downloads.value.keys
-            val missing = database.downloadedSongIds().filterNot { it in indexed }
+            val completed = downloads.value.filterValues { it.state == Download.STATE_COMPLETED }.keys
+            val missing = database.downloadedSongIds().filterNot { it in completed }
             if (missing.isEmpty()) return@launch
-            Timber.tag(TAG).i("Re-queueing ${missing.size} downloads missing from the download index")
-            missing.forEach { download(it) }
+            Timber.tag(TAG).i("Unflagging ${missing.size} songs with no completed download")
+            database.query { missing.forEach { updateDownloadedInfo(it, false, null) } }
         }
+    }
+
+    fun recordBundle(
+        id: String,
+        kind: DownloadBundle.Kind,
+        title: String,
+        thumbnailUrl: String?,
+        songIds: List<String>,
+    ) {
+        scope.launch { bundleStore.record(id, kind, title, thumbnailUrl, songIds) }
     }
 
     fun release() {

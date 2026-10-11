@@ -54,6 +54,7 @@ import com.metrolist.music.db.entities.PlaylistSong
 import com.metrolist.music.db.entities.Song
 import com.metrolist.music.db.entities.SpeedDialItem
 import com.metrolist.music.extensions.toMediaItem
+import com.metrolist.music.playback.DownloadBundle
 import com.metrolist.music.playback.ExoDownloadService
 import com.metrolist.music.playback.queues.ListQueue
 import com.metrolist.music.playback.queues.YouTubeQueue
@@ -574,6 +575,20 @@ fun PlaylistMenu(
                                                 )
                                             },
                                             onClick = {
+                                                if (downloadPlaylist != true) {
+                                                    downloadUtil.recordBundle(
+                                                        id = playlist.id,
+                                                        kind =
+                                                            if (autoPlaylist == true) {
+                                                                DownloadBundle.Kind.AUTO_PLAYLIST
+                                                            } else {
+                                                                DownloadBundle.Kind.LOCAL_PLAYLIST
+                                                            },
+                                                        title = playlist.playlist.name,
+                                                        thumbnailUrl = playlist.thumbnails.firstOrNull(),
+                                                        songIds = songs.map { it.id },
+                                                    )
+                                                }
                                                 songs.forEach { downloadUtil.download(it) }
                                             },
                                         )

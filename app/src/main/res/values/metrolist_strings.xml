@@ -994,4 +994,5 @@
     <!-- Grouped downloads -->
     <string name="downloads_show_grouped">Group downloads</string>
     <string name="downloads_show_all_songs">Show all songs</string>
+    <string name="individual_downloads">Individual downloads</string>
 </resources>

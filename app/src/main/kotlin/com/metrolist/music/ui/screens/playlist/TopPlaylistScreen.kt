@@ -82,6 +82,7 @@ import com.metrolist.music.R
 import com.metrolist.music.constants.MyTopFilter
 import com.metrolist.music.db.entities.Song
 import com.metrolist.music.extensions.toMediaItem
+import com.metrolist.music.playback.DownloadBundle
 import com.metrolist.music.playback.ExoDownloadService
 import com.metrolist.music.playback.queues.ListQueue
 import com.metrolist.music.ui.component.DefaultDialog
@@ -677,6 +678,13 @@ private fun TopPlaylistHeader(
                                         }
                                     }
                                     else -> {
+                                        downloadUtil.recordBundle(
+                                            id = "auto:top",
+                                            kind = DownloadBundle.Kind.AUTO_PLAYLIST,
+                                            title = name,
+                                            thumbnailUrl = songs.firstOrNull()?.thumbnailUrl,
+                                            songIds = songs.map { it.id },
+                                        )
                                         songs.forEach { downloadUtil.download(it) }
                                     }
                                 }

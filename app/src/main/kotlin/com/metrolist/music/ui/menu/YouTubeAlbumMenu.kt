@@ -68,6 +68,7 @@ import com.metrolist.music.constants.ListThumbnailSize
 import com.metrolist.music.db.entities.Song
 import com.metrolist.music.db.entities.SpeedDialItem
 import com.metrolist.music.extensions.toMediaItem
+import com.metrolist.music.playback.DownloadBundle
 import com.metrolist.music.playback.ExoDownloadService
 import com.metrolist.music.playback.queues.YouTubeAlbumRadio
 import com.metrolist.music.ui.component.ListDialog
@@ -121,8 +122,21 @@ fun YouTubeAlbumMenu(
         mutableIntStateOf(Download.STATE_STOPPED)
     }
 
+    val recordBundle = {
+        album?.let {
+            downloadUtil.recordBundle(
+                id = it.album.id,
+                kind = DownloadBundle.Kind.ALBUM,
+                title = it.album.title,
+                thumbnailUrl = it.album.thumbnailUrl,
+                songIds = it.songs.map { song -> song.id },
+            )
+        }
+    }
+
     LaunchedEffect(album) {
         val songs = album?.songs?.map { it.id } ?: return@LaunchedEffect
+        var recorded = false
         downloadUtil.downloads.collect { downloads ->
             downloadState =
                 if (songs.all { downloads[it]?.state == Download.STATE_COMPLETED }) {
@@ -137,6 +151,10 @@ fun YouTubeAlbumMenu(
                 } else {
                     Download.STATE_STOPPED
                 }
+            if (!recorded && downloadState != Download.STATE_STOPPED) {
+                recorded = true
+                recordBundle()
+            }
         }
     }
 
@@ -495,6 +513,7 @@ fun YouTubeAlbumMenu(
                                         )
                                     },
                                     onClick = {
+                                        recordBundle()
                                         album?.songs?.forEach { downloadUtil.download(it) }
                                     },
                                 )

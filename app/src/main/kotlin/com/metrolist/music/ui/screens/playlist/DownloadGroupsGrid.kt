@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -28,7 +27,8 @@ import com.metrolist.music.viewmodels.DownloadGroup
 import com.metrolist.music.viewmodels.DownloadGroupType
 
 @Composable
-fun DownloadGroup.displayTitle(): String = title ?: stringResource(R.string.unknown)
+fun DownloadGroup.displayTitle(): String =
+    title ?: stringResource(if (type == DownloadGroupType.INDIVIDUAL) R.string.individual_downloads else R.string.unknown)
 
 @Composable
 fun DownloadGroupsGrid(
@@ -59,12 +59,7 @@ fun DownloadGroupsGrid(
                         thumbnailUrl = group.thumbnailUrl,
                         isActive = false,
                         isPlaying = false,
-                        shape =
-                            if (group.type == DownloadGroupType.ARTIST) {
-                                CircleShape
-                            } else {
-                                RoundedCornerShape(ThumbnailCornerRadius)
-                            },
+                        shape = RoundedCornerShape(ThumbnailCornerRadius),
                     )
                 },
                 fillMaxWidth = true,

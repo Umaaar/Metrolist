@@ -18,6 +18,7 @@ import com.metrolist.music.db.MusicDatabase
 import com.metrolist.music.extensions.filterExplicit
 import com.metrolist.music.extensions.filterVideoSongs
 import com.metrolist.music.extensions.toEnum
+import com.metrolist.music.playback.DownloadUtil
 import com.metrolist.music.utils.SyncUtils
 import com.metrolist.music.utils.dataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -46,6 +47,7 @@ constructor(
     private val database: MusicDatabase,
     savedStateHandle: SavedStateHandle,
     private val syncUtils: SyncUtils,
+    private val downloadUtil: DownloadUtil,
 ) : ViewModel() {
     val playlist = savedStateHandle.get<String>("playlist")!!
 
@@ -85,6 +87,7 @@ constructor(
         if (playlist == "downloaded") {
             combine(
                 likedSongs,
+                downloadUtil.bundleStore.bundles,
                 database.playlistsWithDownloadedSongs(),
                 database.downloadedPlaylistSongMaps(),
                 ::groupDownloadedSongs,

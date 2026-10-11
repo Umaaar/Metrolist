@@ -37,6 +37,7 @@ import com.metrolist.music.extensions.div
 import com.metrolist.music.extensions.tryOrNull
 import com.metrolist.music.extensions.zipInputStream
 import com.metrolist.music.extensions.zipOutputStream
+import com.metrolist.music.playback.DownloadBundleStore
 import com.metrolist.music.playback.MusicService
 import com.metrolist.music.playback.MusicService.Companion.PERSISTENT_AUTOMIX_FILE
 import com.metrolist.music.playback.MusicService.Companion.PERSISTENT_PLAYER_STATE_FILE
@@ -89,6 +90,11 @@ class BackupRestoreViewModel @Inject constructor(
                         }
                     outputStream.putNextEntry(ZipEntry(ArtistNameAliases.BACKUP_FILENAME))
                     outputStream.write(ArtistNameAliases.serialize().encodeToByteArray())
+                    val bundlesFile = context.filesDir / DownloadBundleStore.FILE_NAME
+                    if (bundlesFile.exists()) {
+                        outputStream.putNextEntry(ZipEntry(DownloadBundleStore.FILE_NAME))
+                        outputStream.write(bundlesFile.readBytes())
+                    }
                     runBlocking(Dispatchers.IO) {
                         database.checkpoint()
                     }
@@ -147,6 +153,7 @@ class BackupRestoreViewModel @Inject constructor(
                 var foundDb = false
                 var foundSettings = false
                 var restoredArtistNameAliases: Map<String, String>? = null
+                var restoredDownloadBundles: ByteArray? = null
 
                 context.applicationContext.contentResolver.openInputStream(uri)?.use { raw ->
                     raw.zipInputStream().use { inputStream ->
@@ -161,6 +168,9 @@ class BackupRestoreViewModel @Inject constructor(
                                 ArtistNameAliases.BACKUP_FILENAME -> {
                                     restoredArtistNameAliases =
                                         ArtistNameAliases.deserialize(inputStream.readBytes().decodeToString())
+                                }
+                                DownloadBundleStore.FILE_NAME -> {
+                                    restoredDownloadBundles = inputStream.readBytes()
                                 }
                                 InternalDatabase.DB_NAME -> {
                                     foundDb = true
@@ -320,6 +330,7 @@ class BackupRestoreViewModel @Inject constructor(
                     context.filesDir.resolve(PERSISTENT_AUTOMIX_FILE).delete()
                     context.filesDir.resolve(PERSISTENT_PLAYER_STATE_FILE).delete()
                     ArtistNameAliases.restore(context, restoredArtistNameAliases.orEmpty())
+                    restoredDownloadBundles?.let { (context.filesDir / DownloadBundleStore.FILE_NAME).writeBytes(it) }
 
                     // 4. Restart — Room will open the swapped DB and run migrations if needed
                     val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {

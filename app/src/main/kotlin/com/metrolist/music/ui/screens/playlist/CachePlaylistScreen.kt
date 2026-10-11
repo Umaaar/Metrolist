@@ -82,6 +82,7 @@ import com.metrolist.music.constants.SongSortType
 import com.metrolist.music.constants.SongSortTypeKey
 import com.metrolist.music.db.entities.Song
 import com.metrolist.music.extensions.toMediaItem
+import com.metrolist.music.playback.DownloadBundle
 import com.metrolist.music.playback.queues.ListQueue
 import com.metrolist.music.ui.component.DraggableScrollbar
 import com.metrolist.music.ui.component.EmptyPlaceholder
@@ -476,6 +477,7 @@ private fun CachePlaylistHeader(
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val downloadUtil = LocalDownloadUtil.current
+    val cachedTitle = stringResource(R.string.cached_playlist)
 
     Column(
         modifier = modifier
@@ -602,6 +604,13 @@ private fun CachePlaylistHeader(
                             },
                             onDownload = {
                                 // Download all cached songs
+                                downloadUtil.recordBundle(
+                                    id = "auto:cache",
+                                    kind = DownloadBundle.Kind.AUTO_PLAYLIST,
+                                    title = cachedTitle,
+                                    thumbnailUrl = songs.firstOrNull()?.thumbnailUrl,
+                                    songIds = songs.map { it.id },
+                                )
                                 songs.forEach { downloadUtil.download(it) }
                             },
                             onDismiss = { menuState.dismiss() }

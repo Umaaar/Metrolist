@@ -403,7 +403,7 @@ class MainActivity : FragmentActivity() {
         listenTogetherManager.initialize()
 
         if (savedInstanceState == null) {
-            downloadUtil.requeueMissingDownloads()
+            downloadUtil.unflagMissingDownloads()
         }
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {

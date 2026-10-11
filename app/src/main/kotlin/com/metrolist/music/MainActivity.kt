@@ -402,6 +402,10 @@ class MainActivity : FragmentActivity() {
         // Initialize Listen Together manager
         listenTogetherManager.initialize()
 
+        if (savedInstanceState == null) {
+            downloadUtil.requeueMissingDownloads()
+        }
+
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             val locale =
                 dataStore[AppLanguageKey]

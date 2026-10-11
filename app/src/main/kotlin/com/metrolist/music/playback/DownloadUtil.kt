@@ -389,6 +389,20 @@ constructor(
         }
     }
 
+    /**
+     * Re-queues songs the database marks as downloaded but the download index does not know,
+     * e.g. after restoring a backup, which carries the database but not the audio.
+     */
+    fun requeueMissingDownloads() {
+        scope.launch {
+            val indexed = downloads.value.keys
+            val missing = database.downloadedSongIds().filterNot { it in indexed }
+            if (missing.isEmpty()) return@launch
+            Timber.tag(TAG).i("Re-queueing ${missing.size} downloads missing from the download index")
+            missing.forEach { download(it) }
+        }
+    }
+
     fun release() {
         scope.cancel()
     }
